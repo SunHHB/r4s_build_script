@@ -95,7 +95,7 @@ elif [ "$1" = "rc2" ]; then
 fi
 
 # lan
-[ -n "$LAN" ] && export LAN=$LAN
+[ -n "$LAN" ] && export LAN=$LAN || export LAN=10.0.0.1
 
 # platform
 [ "$2" = "nanopi-r4s" ] && export platform="rk3399" toolchain_arch="nanopi-r4s"
@@ -125,7 +125,7 @@ export USE_GLIBC=$USE_GLIBC
 export ENABLE_LRNG=$ENABLE_LRNG
 
 # kernel build with clang lto
-[ "$platform" != "bcm53xx" ] && export KERNEL_CLANG_LTO=$KERNEL_CLANG_LTO || export KERNEL_CLANG_LTO=n
+export KERNEL_CLANG_LTO=$KERNEL_CLANG_LTO
 
 # print version
 echo -e "\r\n${GREEN_COLOR}Building $branch${RES}\r\n"
@@ -135,7 +135,7 @@ elif [ "$platform" = "bcm53xx" ]; then
     echo -e "${GREEN_COLOR}Model: netgear_r8500${RES}"
     [ -z "$LAN" ] && export LAN="192.168.1.1"
 elif [ "$platform" = "rk3568" ]; then
-    echo -e "${GREEN_COLOR}Model: nanopi-r5s${RES}"
+    echo -e "${GREEN_COLOR}Model: nanopi-r5s/r5c${RES}"
     [ "$1" = "rc2" ] && model="nanopi-r5s"
 else
     echo -e "${GREEN_COLOR}Model: nanopi-r4s${RES}"
@@ -158,7 +158,7 @@ elif [ "$USE_GCC15" = "y" ]; then
 else
     echo -e "${GREEN_COLOR}GCC VERSION: 11${RES}"
 fi
-[ "$KERNEL_CLANG_LTO" = "y" ] && echo -e "${GREEN_COLOR}KERNEL_CLANG_LTO: true${RES}" || echo -e "${GREEN_COLOR}KERNEL_CLANG_LTO: false${RES}"
+[ -n "$LAN" ] && echo -e "${GREEN_COLOR}LAN: $LAN${RES}" || echo -e "${GREEN_COLOR}LAN: 10.0.0.1${RES}"
 [ "$USE_MOLD" = "y" ] && echo -e "${GREEN_COLOR}USE_MOLD: true${RES}" || echo -e "${GREEN_COLOR}USE_MOLD: false${RES}"
 [ "$ENABLE_OTA" = "y" ] && echo -e "${GREEN_COLOR}ENABLE_OTA: true${RES}" || echo -e "${GREEN_COLOR}ENABLE_OTA: false${RES}"
 [ "$ENABLE_BPF" = "y" ] && echo -e "${GREEN_COLOR}ENABLE_BPF: true${RES}" || echo -e "${GREEN_COLOR}ENABLE_BPF: false${RES}"
@@ -166,7 +166,7 @@ fi
 [ "$ENABLE_LRNG" = "y" ] && echo -e "${GREEN_COLOR}ENABLE_LRNG: true${RES}" || echo -e "${GREEN_COLOR}ENABLE_LRNG: false${RES}"
 [ "$BUILD_FAST" = "y" ] && echo -e "${GREEN_COLOR}BUILD_FAST: true${RES}" || echo -e "${GREEN_COLOR}BUILD_FAST: false${RES}"
 [ "$MINIMAL_BUILD" = "y" ] && echo -e "${GREEN_COLOR}MINIMAL_BUILD: true${RES}" || echo -e "${GREEN_COLOR}MINIMAL_BUILD: false${RES}"
-[ -n "$LAN" ] && echo -e "${GREEN_COLOR}LAN IP: $LAN${RES}\r\n" || echo -e "${GREEN_COLOR}LAN IP: 10.0.0.1${RES}\r\n"
+[ "$KERNEL_CLANG_LTO" = "y" ] && echo -e "${GREEN_COLOR}KERNEL_CLANG_LTO: true${RES}\r\n" || echo -e "${GREEN_COLOR}KERNEL_CLANG_LTO: false${RES}\r\n"
 
 # clean old files
 rm -rf openwrt master && mkdir master
@@ -502,7 +502,7 @@ EOF
         exit 1
     fi
 else
-    if [ -f bin/targets/rockchip/armv8*/*-r5s-ext4-sysupgrade.img.gz ] || [ -f bin/targets/rockchip/armv8*/*-r4s-ext4-sysupgrade.img.gz ]; then
+    if [ -f bin/targets/rockchip/armv8*/*-r5s-ext4-sysupgrade.img.gz ] || [ -f bin/targets/rockchip/armv8*/*-r5c-ext4-sysupgrade.img.gz ] || [ -f bin/targets/rockchip/armv8*/*-r4s-ext4-sysupgrade.img.gz ]; then
         if [ "$ALL_KMODS" = y ]; then
             cp -a bin/targets/rockchip/armv8*/packages $kmodpkg_name
             rm -f $kmodpkg_name/Packages*
@@ -537,9 +537,17 @@ else
 }
 EOF
             elif [ "$model" = "nanopi-r5s" ]; then
+                SHA256_R5C=$(sha256sum bin/targets/rockchip/armv8*/*-r5c-squashfs-sysupgrade.img.gz | awk '{print $1}')
                 SHA256_R5S=$(sha256sum bin/targets/rockchip/armv8*/*-r5s-squashfs-sysupgrade.img.gz | awk '{print $1}')
                 cat > ota/fw.json <<EOF
 {
+  "friendlyarm,nanopi-r5c": [
+    {
+      "build_date": "$CURRENT_DATE",
+      "sha256sum": "$SHA256_R5C",
+      "url": "https://r5s.cooluc.com/$BUILD_TYPE/openwrt-23.05/v$VERSION/openwrt-$VERSION-rockchip-armv8-friendlyarm_nanopi-r5c-squashfs-sysupgrade.img.gz"
+    }
+  ],
   "friendlyarm,nanopi-r5s": [
     {
       "build_date": "$CURRENT_DATE",

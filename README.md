@@ -1,4 +1,4 @@
-# NanoPi R4S/R5S & X86_64 OpenWrt 简易构建脚本存档
+# NanoPi R4S/R5S/R5C & X86_64 OpenWrt 简易构建脚本存档
 
 ### 存档来自：https://init2.cooluc.com
 
@@ -8,7 +8,7 @@
 
 #### NanoPi R4S: https://r4s.cooluc.com
 
-#### NanoPi R5S: https://r5s.cooluc.com
+#### NanoPi R5S/R5C: https://r5s.cooluc.com
 
 #### X86_64: https://x86.cooluc.com
 
@@ -46,7 +46,16 @@ sudo apt-get install -y clang-15
 
 ---------------
 
-### 启用 [glibc](https://www.gnu.org/software/libc/) （测试）
+### 启用 [Clang/LLVM](https://docs.kernel.org/kbuild/llvm.html) 构建内核
+##### 脚本支持使用 Clang/LLVM 构建内核，NanoPi & X86_64 设备将同时启用 LLVM LTO 链接时优化，这会增加编译的时间，但会获得更优的性能
+##### 编译环境需要安装 Clang/LLVM 工具链，推荐使用 clang 16-18 版本
+##### 只需在构建固件前执行以下命令即可启用 Clang/LLVM 构建内核与内核模块
+
+```
+export KERNEL_CLANG_LTO=y
+```
+
+### 启用 [glibc](https://www.gnu.org/software/libc/) （实验性）
 ##### 脚本支持使用 glibc 库进行构建，当启用 glibc 进行构建时，构建的固件将会同时兼容 musl/glibc 的预构建二进制程序
 ##### 只需在构建固件前执行以下命令即可启用 glibc 构建
 
@@ -55,7 +64,7 @@ export USE_GLIBC=y
 ```
 
 ### 启用 [GCC13](https://gcc.gnu.org/gcc-13/)/[GCC14](https://gcc.gnu.org/gcc-14/)/[GCC15](https://gcc.gnu.org/gcc-15/) 工具链编译
-##### 只需在构建固件前执行以下命令即可启用 GCC13/GCC14/GCC15 工具链
+##### 只需在构建固件前执行以下命令即可启用 GCC13/GCC14/GCC15 交叉工具链
 
 ```
 # GCC13
@@ -134,7 +143,7 @@ export LAN=10.0.0.1
 bash <(curl -sS https://init2.cooluc.com/build.sh) rc2 nanopi-r4s
 ```
 
-### nanopi-r5s
+### nanopi-r5s/r5c
 ```shell
 # linux-6.6
 bash <(curl -sS https://init2.cooluc.com/build.sh) rc2 nanopi-r5s
@@ -197,7 +206,7 @@ bash <(curl -sS https://init2.cooluc.com/build.sh) dev x86_64
 bash <(curl -sS https://raw.githubusercontent.com/你的用户名/r4s_build_script/master/openwrt/build.sh) rc2 nanopi-r4s
 ```
 
-#### nanopi-r5s openwrt-23.05
+#### nanopi-r5s/r5c openwrt-23.05
 ```shell
 # linux-6.6
 bash <(curl -sS https://raw.githubusercontent.com/你的用户名/r4s_build_script/master/openwrt/build.sh) rc2 nanopi-r5s
