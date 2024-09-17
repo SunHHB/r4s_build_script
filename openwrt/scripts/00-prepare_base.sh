@@ -67,6 +67,7 @@ if [ "$ENABLE_UHTTPD" != "y" ]; then
 fi
 
 # Realtek driver - R8168 & R8125 & R8126 & R8152 & R8101
+rm -rf package/kernel/r8168 package/kernel/r8101 package/kernel/r8125 package/kernel/r8126
 git clone https://$github/sbwml/package_kernel_r8168 package/kernel/r8168
 git clone https://$github/sbwml/package_kernel_r8152 package/kernel/r8152
 git clone https://$github/sbwml/package_kernel_r8101 package/kernel/r8101
@@ -198,12 +199,16 @@ git clone https://$gitea/sbwml/nft-fullcone package/new/nft-fullcone
 # IPv6 NAT
 git clone https://$github/sbwml/packages_new_nat6 package/new/nat6
 
-# Patch Luci add nft_fullcone/bcm_fullcone & shortcut-fe & ipv6-nat & custom nft command option
+# natflow
+git clone https://$github/sbwml/package_new_natflow package/new/natflow
+
+# Patch Luci add nft_fullcone/bcm_fullcone & shortcut-fe & natflow & ipv6-nat & custom nft command option
 pushd feeds/luci
-    curl -s https://$mirror/openwrt/patch/firewall4/01-luci-app-firewall_add_nft-fullcone-bcm-fullcone_option.patch | patch -p1
-    curl -s https://$mirror/openwrt/patch/firewall4/02-luci-app-firewall_add_shortcut-fe.patch | patch -p1
-    curl -s https://$mirror/openwrt/patch/firewall4/03-luci-app-firewall_add_ipv6-nat.patch | patch -p1
-    curl -s https://$mirror/openwrt/patch/firewall4/04-luci-add-firewall4-nft-rules-file.patch | patch -p1
+    curl -s https://$mirror/openwrt/patch/firewall4/0001-luci-app-firewall-add-nft-fullcone-and-bcm-fullcone-.patch | patch -p1
+    curl -s https://$mirror/openwrt/patch/firewall4/0002-luci-app-firewall-add-shortcut-fe-option.patch | patch -p1
+    curl -s https://$mirror/openwrt/patch/firewall4/0003-luci-app-firewall-add-ipv6-nat-option.patch | patch -p1
+    curl -s https://$mirror/openwrt/patch/firewall4/0004-luci-add-firewall-add-custom-nft-rule-support.patch | patch -p1
+    curl -s https://$mirror/openwrt/patch/firewall4/0005-luci-app-firewall-add-natflow-offload-support.patch | patch -p1
 popd
 
 # openssl - quictls
@@ -386,12 +391,13 @@ sed -i 's/cheaper = 1/cheaper = 2/g' feeds/packages/net/uwsgi/files-luci-support
 sed -i 's/option timeout 30/option timeout 60/g' package/system/rpcd/files/rpcd.config
 sed -i 's#20) \* 1000#60) \* 1000#g' feeds/luci/modules/luci-base/htdocs/luci-static/resources/rpc.js
 
-# luci - 20_memory & 25_storage & refresh interval
+# luci-mod extra
 pushd feeds/luci
-    curl -s https://$mirror/openwrt/patch/luci/20_memory.js.patch | patch -p1
-    curl -s https://$mirror/openwrt/patch/luci/luci-refresh-interval.patch | patch -p1
-    # luci-mod-status: storage index applicable only to valid
-    curl -s https://$mirror/openwrt/patch/luci/luci-mod-status-storage-index-applicable-only-to-val.patch | patch -p1
+    curl -s https://$mirror/openwrt/patch/luci/0001-luci-mod-system-add-modal-overlay-dialog-to-reboot.patch | patch -p1
+    curl -s https://$mirror/openwrt/patch/luci/0002-luci-mod-status-displays-actual-process-memory-usage.patch | patch -p1
+    curl -s https://$mirror/openwrt/patch/luci/0003-luci-mod-status-storage-index-applicable-only-to-val.patch | patch -p1
+    curl -s https://$mirror/openwrt/patch/luci/0004-luci-mod-status-firewall-disable-legacy-firewall-rul.patch | patch -p1
+    curl -s https://$mirror/openwrt/patch/luci/0005-luci-mod-system-add-refresh-interval-setting.patch | patch -p1
 popd
 
 # Luci diagnostics.js
@@ -429,6 +435,7 @@ sed -ri "s/(PKG_VERSION:=)[^\"]*/\1$ZLIB_VERSION/;s/(PKG_HASH:=)[^\"]*/\1$ZLIB_H
 # profile
 sed -i 's#\\u@\\h:\\w\\\$#\\[\\e[32;1m\\][\\u@\\h\\[\\e[0m\\] \\[\\033[01;34m\\]\\W\\[\\033[00m\\]\\[\\e[32;1m\\]]\\[\\e[0m\\]\\\$#g' package/base-files/files/etc/profile
 sed -ri 's/(export PATH=")[^"]*/\1%PATH%:\/opt\/bin:\/opt\/sbin:\/opt\/usr\/bin:\/opt\/usr\/sbin/' package/base-files/files/etc/profile
+sed -i '/PS1/a\export TERM=xterm-color' package/base-files/files/etc/profile
 
 # bash
 sed -i 's#ash#bash#g' package/base-files/files/etc/passwd
@@ -441,6 +448,10 @@ curl -so files/root/.bashrc https://$mirror/openwrt/files/root/.bashrc
 mkdir -p files/etc/sysctl.d
 curl -so files/etc/sysctl.d/15-vm-swappiness.conf https://$mirror/openwrt/files/etc/sysctl.d/15-vm-swappiness.conf
 curl -so files/etc/sysctl.d/16-udp-buffer-size.conf https://$mirror/openwrt/files/etc/sysctl.d/16-udp-buffer-size.conf
+if [ "$platform" = "bcm53xx" ]; then
+    mkdir -p files/etc/hotplug.d/block
+    curl -so files/etc/hotplug.d/block/20-usbreset https://$mirror/openwrt/files/etc/hotplug.d/block/20-usbreset
+fi
 
 # NTP
 sed -i 's/0.openwrt.pool.ntp.org/ntp1.aliyun.com/g' package/base-files/files/bin/config_generate
